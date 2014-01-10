@@ -10,6 +10,20 @@
 
     <dependencies>
 
+        <!--After adding to maven repo the uQuasarAdapter jar
+        mvn install:install-file -Dfile=/home/eleni/IdeaProjects/uQasarAdapter/target/uQasarAdapter.jar -DgroupId=uQasarAdapter -DartifactId=uQasarAdapter -Dversion=1.0 -Dpackaging=jar
+        -->
+        <dependency>
+        <groupId>uQasarAdapter</groupId>
+        <artifactId>uQasarAdapter</artifactId>
+        <version>1.0</version>
+        </dependency>
+        <!-- MySQL -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.21</version>
+        </dependency>
         <!-- LOGGING DEPENDENCIES - LOG4J -->
         <dependency>
             <groupId>org.slf4j</groupId>

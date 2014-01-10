@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="uQasarAdapter">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../uQasarAdapter/target/uQasarAdapter.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -17,6 +17,7 @@ import eu.uqasar.adapter.query.QueryExpression;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -29,13 +30,49 @@ import java.util.List;
  */
 public class JiraAdapter implements SystemAdapter {
 
-
+    dbConnector dbHandler;
     public JiraAdapter() {
+          dbHandler = new dbConnector();
     }
 
     @Override
     public BindedSystem addSystemBindingInformation(BindingInformation bindingInformation) throws uQasarException {
-        return null;
+         BindedSystem system = new BindedSystem();
+           try {
+                this.dbHandler.dbOpen();
+
+                 int system_id = this.dbHandler.dbUpdate("INSERT INTO System (uri , id_type ) VALUES ('"+bindingInformation.getURI()+"', 1);");
+
+                system.setId(String.valueOf(system_id));
+                system.setBindingInformation(bindingInformation);
+
+                this.dbHandler.dbClose();
+           } catch (SQLException e) {
+               throw new uQasarException (uQasarException.UQasarExceptionType.UQASAR_DB_CONNECTION_REFUSED);
+           } catch (Exception e) {
+               e.printStackTrace();
+           }
+
+            return system;
+
+    }
+
+    @Override
+    public int addSystemBindingCredentials(Credentials credentials, int id_bindedSystem) throws uQasarException {
+        int user_id=0;
+        try {
+            this.dbHandler.dbOpen();
+
+            user_id = this.dbHandler.dbUpdate("INSERT INTO User( username ,password, id_system) VALUES ('"+credentials.getUsername()+"', '"+credentials.getPassword()+"', "+id_bindedSystem+");");
+
+            this.dbHandler.dbClose();
+        } catch (SQLException e) {
+            throw new uQasarException (uQasarException.UQasarExceptionType.UQASAR_DB_CONNECTION_REFUSED);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return user_id;
     }
 
     @Override
@@ -44,7 +81,6 @@ public class JiraAdapter implements SystemAdapter {
 
         ResultSet rs;
 
-        dbConnector dbHandler = new dbConnector();
         try {
 
             dbHandler.dbOpen();
@@ -62,8 +98,10 @@ public class JiraAdapter implements SystemAdapter {
             }
             rs.close();
             dbHandler.dbClose();
-        } catch (Throwable t) {
-            t.printStackTrace();
+        } catch (SQLException e) {
+          throw new uQasarException (uQasarException.UQasarExceptionType.UQASAR_DB_CONNECTION_REFUSED);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         return bindedSystems;
@@ -75,41 +113,54 @@ public class JiraAdapter implements SystemAdapter {
         String measurementJSONResult;
         LinkedList<Measurement> measurements = new LinkedList<Measurement>();
         try {
-            uri = new URI(bindedSystem.getBindingInformation().getURI());
-        } catch (URISyntaxException e) {
-           throw new uQasarException("URISyntaxException" + e.toString());
-        }
+                uri = new URI(bindedSystem.getBindingInformation().getURI());
+                JiraRestClientFactory factory = new AsynchronousJiraRestClientFactory();
+                JiraRestClient client = factory.createWithBasicHttpAuthentication(uri, bindedSystem.getCredentials().getUsername(), bindedSystem.getCredentials().getPassword());
 
-        JiraRestClientFactory factory = new AsynchronousJiraRestClientFactory();
-        JiraRestClient client = factory.createWithBasicHttpAuthentication(uri, bindedSystem.getCredentials().getUsername(), bindedSystem.getCredentials().getPassword());
 
-        if (queryExpression.getQuery().equalsIgnoreCase(uQasarMetric.RESOURCES_PER_BINDING.name())){
+                if (queryExpression.getQuery().equalsIgnoreCase(uQasarMetric.RESOURCES_PER_BINDING.name())){
 
-             measurementJSONResult =   client.getProjectClient().getAllProjects().claim().toString();
-             measurements.add(new Measurement(uQasarMetric.RESOURCES_PER_BINDING,measurementJSONResult));
-             return measurements;
+                measurementJSONResult =   client.getProjectClient().getAllProjects().claim().toString();
+                measurements.add(new Measurement(uQasarMetric.RESOURCES_PER_BINDING,measurementJSONResult));
+                return measurements;
 
-        }  else if (queryExpression.getQuery().equalsIgnoreCase(uQasarMetric.ISSUES_PER_RESOURCE_PER_BINDING.name())) {
+                }  else if (queryExpression.getQuery().equalsIgnoreCase(uQasarMetric.ISSUES_PER_RESOURCE_PER_BINDING.name())) {
 
-                Iterable<BasicProject> basicProjects  =   client.getProjectClient().getAllProjects().claim();
-                for (BasicProject basicProject : basicProjects) {
-                    System.out.println(basicProject.getName());
+                        Iterable<BasicProject> basicProjects  =   client.getProjectClient().getAllProjects().claim();
+                        for (BasicProject basicProject : basicProjects) {
+                            System.out.println(basicProject.getName());
 
-                   Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql("project = "+basicProject.getName());
-                   Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
-                   measurementJSONResult = issues.toString();
-                   measurements.add(new Measurement(uQasarMetric.ISSUES_PER_RESOURCE_PER_BINDING,measurementJSONResult));
+                           Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql("project = "+basicProject.getName());
+                           Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
+                           measurementJSONResult = issues.toString();
+                           measurements.add(new Measurement(uQasarMetric.ISSUES_PER_RESOURCE_PER_BINDING,measurementJSONResult));
+                        }
+
+                    return measurements;
+                } else if (queryExpression.getQuery().contains(uQasarMetric.SEARCH_ISSUES.name())) {
+
+                    String[] stringParts = queryExpression.getQuery().split("SEARCH_ISSUES");
+                    String jqlQuery = stringParts[1];
+
+                    System.out.println("jqlQuery "+jqlQuery);
+
+                        Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql(jqlQuery);
+                        Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
+                        measurementJSONResult = issues.toString();
+                        measurements.add(new Measurement(uQasarMetric.SEARCH_ISSUES,measurementJSONResult));
+
+
+                    return measurements;
+                }else{
+
+                   throw new uQasarException(uQasarException.UQasarExceptionType.UQASAR_NOT_EXISTING_METRIC,queryExpression.getQuery());
+
                 }
 
-            return measurements;
-        } else if (queryExpression.getQuery().equalsIgnoreCase(uQasarMetric.USERS_PER_BINDING.name())) {
-
-            return null;
-
-        }else{
-
-           throw new uQasarException("metric is not defined");
-
+        } catch (URISyntaxException e) {
+            throw new uQasarException(uQasarException.UQasarExceptionType.BINDING_SYSTEM_BAD_URI_SYNTAX,bindedSystem,e.getCause());
+        }  catch (RuntimeException e){
+            throw new uQasarException(uQasarException.UQasarExceptionType.BINDING_SYSTEM_CONNECTION_REFUSED,bindedSystem,e.getCause());
         }
 
 
