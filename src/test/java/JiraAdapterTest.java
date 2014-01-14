@@ -1,5 +1,7 @@
 import eu.uqasar.adapter.exception.uQasarException;
-import eu.uqasar.adapter.model.*;
+import eu.uqasar.adapter.model.BindedSystem;
+import eu.uqasar.adapter.model.Measurement;
+import eu.uqasar.adapter.model.uQasarMetric;
 import eu.uqasar.jira.adapter.JiraAdapter;
 import eu.uqasar.jira.adapter.JiraQueryExpresion;
 import org.junit.Test;
@@ -17,13 +19,13 @@ import static org.junit.Assert.assertTrue;
  */
 public class JiraAdapterTest {
 
-
+    JiraAdapter jiraAdapter = new JiraAdapter();
+    String newLine = System.getProperty("line.separator");
     // Test uqasar db connection
     // Test   metrics : { RESOURCES_PER_BINDING , ISSUES_PER_RESOURCE_PER_BINDING }
     @Test
     public void queryTest(){
         List<Measurement> measurements;
-        JiraAdapter jiraAdapter = new JiraAdapter();
         List<BindedSystem> bindedSystems = null;
         try {
             bindedSystems = jiraAdapter.getBindedSystems();
@@ -36,9 +38,8 @@ public class JiraAdapterTest {
 
                 try{
                     for (uQasarMetric metric  :uQasarMetric.values()) {
-                        System.out.println("----------TEST metric: "+metric+" ----------");
                         JiraQueryExpresion jiraQueryExpresion = new JiraQueryExpresion(metric.name());
-                        measurements = jiraAdapter.query(bindedSystem, bindedSystem.getCredentials(), jiraQueryExpresion);
+                        measurements = jiraAdapter.query(bindedSystem, bindedSystem.getUser(), jiraQueryExpresion);
                         printMeasurements(measurements);
                     }
                 }catch (uQasarException e){
@@ -52,9 +53,6 @@ public class JiraAdapterTest {
     @Test
     public void queryTest_erroneus_metric(){
 
-        JiraAdapter jiraAdapter = new JiraAdapter();
-
-
         List<BindedSystem> bindedSystems = null;
         try {
             bindedSystems = jiraAdapter.getBindedSystems();
@@ -67,7 +65,7 @@ public class JiraAdapterTest {
         for (BindedSystem bindedSystem : bindedSystems) {
 
             try{
-                Measurement m = jiraAdapter.query(bindedSystem, bindedSystem.getCredentials(), jiraQueryExpresion).get(0);
+                Measurement m = jiraAdapter.query(bindedSystem, bindedSystem.getUser(), jiraQueryExpresion).get(0);
             }catch (uQasarException e){
                 e.printStackTrace();
                 assertTrue(true);
@@ -78,40 +76,41 @@ public class JiraAdapterTest {
     // Add new System to uQasarBinding database
     @Test
     public void addSystemBindingInformationTest(){
-       /*
-        JiraAdapter jiraAdapter = new JiraAdapter();
-
+        /*
         try {
-            BindedSystem bindedSystem = jiraAdapter.addSystemBindingInformation(new BindingInformation("http://testinstance"));
-            System.out.println(bindedSystem.getBindingInformation().getURI());
+            BindedSystem bindedSystem = jiraAdapter.addSystemBindingInformation(new BindedSystem("http://testinstance",1),new User("eleni","ego"));
+            System.out.println(bindedSystem.getUri());
         } catch (uQasarException e) {
             e.printStackTrace();
         }
         */
-    }
 
+    }
 
     // Add new System to uQasarBinding database
     @Test
-    public void addSystemBindingCredentialsTest(){
-       /*
-        JiraAdapter jiraAdapter = new JiraAdapter();
+    public void getBindedSystemsTest(){
 
         try {
-            int id_user = jiraAdapter.addSystemBindingCredentials(new Credentials("manos","sifakis"),4);
-            System.out.println("id_user : "+id_user);
+            List<BindedSystem> bindedSystems = jiraAdapter.getBindedSystems();
+            System.out.println("----------TEST GET BindedSystems----------"+newLine);
+            for (BindedSystem bindedSystem : bindedSystems) {
+
+                System.out.println("Binded System base url : "+ bindedSystem.getUri() + "Username : " + bindedSystem.getUser().getUsername());
+            }
         } catch (uQasarException e) {
             e.printStackTrace();
         }
-        */
+
     }
 
 
     public void printMeasurements(List<Measurement> measurements){
 
         for (Measurement measurement : measurements) {
-            System.out.println(measurement.getMetric());
-            System.out.println(measurement.getMeasurement());
+            System.out.println("----------TEST metric: "+measurement.getMetric()+" ----------"+newLine);
+            System.out.println(measurement.getMeasurement()+newLine+newLine);
+            System.out.println();
 
         }
     }
