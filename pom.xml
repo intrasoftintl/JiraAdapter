@@ -54,7 +54,8 @@
         </dependency>
 
     </dependencies>
-    <build>		<plugins>
+    <build>
+    <plugins>
         <plugin>
             <inherited>true</inherited>
             <groupId>org.apache.maven.plugins</groupId>
@@ -89,7 +90,26 @@
                 </transformers>
             </configuration>
         </plugin>
+        <!--
+        <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>1.2.1</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>java</goal>
+                    </goals>
+                </execution>
+            </executions>
+            <configuration>
+                <mainClass>eu.uqasar.jira.adapter.JiraAdapter.main</mainClass>
+
+            </configuration>
+        </plugin>
+       -->
     </plugins>
+
     </build>
 
     <repositories>

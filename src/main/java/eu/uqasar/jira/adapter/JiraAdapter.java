@@ -140,4 +140,42 @@ public class JiraAdapter implements SystemAdapter {
 
     }
 
+
+    public void printMeasurements(List<Measurement> measurements){
+        String newLine = System.getProperty("line.separator");
+        for (Measurement measurement : measurements) {
+            System.out.println("----------TEST metric: "+measurement.getMetric()+" ----------"+newLine);
+            System.out.println(measurement.getMeasurement()+newLine+newLine);
+            System.out.println();
+
+        }
+    }
+
+
+    public static void main(String[] args) {
+        List<Measurement> measurements;
+
+        BindedSystem bindedSystem = new BindedSystem();
+        bindedSystem.setUri(args[0]);
+        User user = new User();
+
+        user.setUsername(args[1]);
+        user.setPassword(args[2]);
+
+        JiraQueryExpresion jiraQueryExpresion = new JiraQueryExpresion(args[3]);
+
+
+        try {
+        JiraAdapter jiraAdapter = new JiraAdapter();
+
+            measurements = jiraAdapter.query(bindedSystem,user,jiraQueryExpresion);
+            jiraAdapter.printMeasurements(measurements);
+
+        } catch (uQasarException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
 }
