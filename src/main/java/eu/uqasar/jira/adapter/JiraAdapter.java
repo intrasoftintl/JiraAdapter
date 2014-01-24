@@ -32,37 +32,6 @@ public class JiraAdapter implements SystemAdapter {
     }
 
     @Override
-    public BindedSystem addSystemBindingInformation(BindedSystem bindedSystem, User user) throws uQasarException {
-
-        HibernateConnector c = HibernateConnector.getInstance();
-        try{
-
-        bindedSystem.setId_type(1);
-        bindedSystem.setUser(user);
-        user.setBindedSystem(bindedSystem);
-        c.saveSystemUser(user);
-
-        return bindedSystem;
-        }catch (Exception e) {
-            throw new uQasarException (uQasarException.UQasarExceptionType.UQASAR_DB_CONNECTION_REFUSED);
-        }
-    }
-
-
-
-    @Override
-    public List<BindedSystem> getBindedSystems() throws uQasarException {
-        try{
-            HibernateConnector c = HibernateConnector.getInstance();
-            List<BindedSystem> bindedSystems = c.getBindedSystems();
-            return  bindedSystems;
-
-        } catch (Exception e) {
-            throw new uQasarException (uQasarException.UQasarExceptionType.UQASAR_DB_CONNECTION_REFUSED);
-        }
-    }
-
-    @Override
     public List<Measurement> query(BindedSystem bindedSystem, User user, QueryExpression queryExpression) throws uQasarException {
         URI uri = null;
         String measurementJSONResult;
@@ -140,8 +109,31 @@ public class JiraAdapter implements SystemAdapter {
 
     }
 
+    @Override
+    public List<Measurement> query(String bindedSystemURL, String credentials, String queryExpression) throws uQasarException {
+        List<Measurement> measurements = null;
 
-    public void printMeasurements(List<Measurement> measurements){
+        BindedSystem bindedSystem = new BindedSystem();
+        bindedSystem.setUri(bindedSystemURL);
+        User user = new User();
+
+        String[] creds = credentials.split(":");
+
+        user.setUsername(creds[0]);
+        user.setPassword(creds[1]);
+
+        JiraQueryExpresion jiraQueryExpresion = new JiraQueryExpresion(queryExpression);
+
+        JiraAdapter jiraAdapter = new JiraAdapter();
+
+        measurements = jiraAdapter.query(bindedSystem,user,jiraQueryExpresion);
+
+
+        return measurements;
+    }
+
+
+        public void printMeasurements(List<Measurement> measurements){
         String newLine = System.getProperty("line.separator");
         for (Measurement measurement : measurements) {
             System.out.println("----------TEST metric: "+measurement.getMetric()+" ----------"+newLine);
@@ -151,6 +143,8 @@ public class JiraAdapter implements SystemAdapter {
         }
     }
 
+    //in order to invoke main from outside jar
+    //mvn exec:java -Dexec.mainClass="eu.uqasar.jira.adapter.JiraAdapter" -Dexec.args="http://95.211.223.9:8084 soaptester:soaptester ISSUES_PER_PROJECTS_PER_SYSTEM_INSTANCE"
 
     public static void main(String[] args) {
         List<Measurement> measurements;
@@ -158,12 +152,11 @@ public class JiraAdapter implements SystemAdapter {
         BindedSystem bindedSystem = new BindedSystem();
         bindedSystem.setUri(args[0]);
         User user = new User();
+        String[] credentials = args[1].split(":");
+        user.setUsername(credentials[0]);
+        user.setPassword(credentials[1]);
 
-        user.setUsername(args[1]);
-        user.setPassword(args[2]);
-
-        JiraQueryExpresion jiraQueryExpresion = new JiraQueryExpresion(args[3]);
-
+        JiraQueryExpresion jiraQueryExpresion = new JiraQueryExpresion(args[2]);
 
         try {
         JiraAdapter jiraAdapter = new JiraAdapter();
@@ -174,8 +167,6 @@ public class JiraAdapter implements SystemAdapter {
         } catch (uQasarException e) {
             e.printStackTrace();
         }
-
-
     }
 
 }
