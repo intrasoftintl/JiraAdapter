@@ -46,6 +46,12 @@ All JiraAdapter methods are tested via junit tests
 
 JiraAdapter can be invoked as Java Library (JAR) from command line as 
 	mvn exec:java -Dexec.mainClass="eu.uqasar.jira.adapter.JiraAdapter" -Dexec.args="http://95.211.223.9:8084 soaptester:soaptester ISSUES_PER_PROJECTS_PER_SYSTEM_INSTANCE"
+	
+	OR
+
+	java -cp JiraAdapter-1.0.jar eu.uqasar.jira.adapter.JiraAdapter http://95.211.223.9:8084 soaptester:soaptester ISSUES_PER_PROJECTS_PER_SYSTEM_INSTANCE
+
+		
  
 	arg0 is the URL binding or the JiraInstallation
 	arg1 is the string concatenation of username:password
