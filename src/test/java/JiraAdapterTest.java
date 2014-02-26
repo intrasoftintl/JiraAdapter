@@ -1,10 +1,8 @@
 import eu.uqasar.adapter.exception.uQasarException;
-import eu.uqasar.adapter.model.Measurement;
 import eu.uqasar.adapter.model.uQasarMetric;
 import eu.uqasar.jira.adapter.JiraAdapter;
+import org.codehaus.jettison.json.JSONArray;
 import org.junit.Test;
-
-import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 
@@ -26,14 +24,16 @@ public class JiraAdapterTest {
     // Test   metrics : { RESOURCES_PER_BINDING , ISSUES_PER_RESOURCE_PER_BINDING }
     @Test
     public void queryTest(){
-        List<Measurement> measurements;
+        JSONArray measurements = null;
 
         try{
             for (uQasarMetric metric  :uQasarMetric.values()) {
 
                 measurements = jiraAdapter.query(bindedSystemURL, credentials, metric.name());
-                printMeasurements(measurements);
+                System.out.println("------------------------------------------"+newLine);
+                System.out.println(measurements);
             }
+
         }catch (uQasarException e){
             e.printStackTrace();
         }
@@ -45,23 +45,12 @@ public class JiraAdapterTest {
     public void queryTest_erroneus_metric(){
 
     try{
-        Measurement m = jiraAdapter.query(bindedSystemURL, credentials, "ERRONEUS METRIC").get(0);
+        JSONArray measurements = jiraAdapter.query(bindedSystemURL, credentials, "ERRONEUS METRIC");
     }catch (uQasarException e){
         e.printStackTrace();
         assertTrue(true);
     }
 
-    }
-
-
-    public void printMeasurements(List<Measurement> measurements){
-
-        for (Measurement measurement : measurements) {
-            System.out.println("----------TEST metric: "+measurement.getMetric()+" ----------"+newLine);
-            System.out.println(measurement.getMeasurement()+newLine+newLine);
-            System.out.println();
-
-        }
     }
 
 }
