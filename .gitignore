@@ -1,2 +1,5 @@
 target/
 jiraAdapter.iml
+.directory
+.idea/
+lib/
