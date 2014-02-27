@@ -1,5 +1,5 @@
 target/
-jiraAdapter.iml
+/jiraAdapter.iml
 .directory
 .idea/
 lib/
