@@ -11,6 +11,7 @@ import com.atlassian.util.concurrent.Promise;
 import eu.uqasar.adapter.SystemAdapter;
 import eu.uqasar.adapter.exception.uQasarException;
 import eu.uqasar.adapter.model.BindedSystem;
+import eu.uqasar.adapter.model.Measurement;
 import eu.uqasar.adapter.model.User;
 import eu.uqasar.adapter.model.uQasarMetric;
 import eu.uqasar.adapter.query.QueryExpression;
@@ -20,7 +21,8 @@ import org.codehaus.jettison.json.JSONObject;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Created with IntelliJ IDEA.
@@ -32,14 +34,16 @@ import java.util.Collection;
 public class JiraAdapter implements SystemAdapter {
 
 
+
+
     public JiraAdapter() {
     }
 
     @Override
-    public JSONArray query(BindedSystem bindedSystem, User user, QueryExpression queryExpression) throws uQasarException {
+    public List<Measurement> query(BindedSystem bindedSystem, User user, QueryExpression queryExpression) throws uQasarException {
         URI uri = null;
-        JSONArray jsonArrayresult;
-        JSONArray measurements = new JSONArray();
+        LinkedList<Measurement> measurements = new LinkedList<Measurement>();
+
 
         try {
 
@@ -51,77 +55,49 @@ public class JiraAdapter implements SystemAdapter {
             /* START -- Metrics implementation */
             if (queryExpression.getQuery().equalsIgnoreCase(uQasarMetric.PROJECTS_PER_SYSTEM_INSTANCE.name())){
 
-                jsonArrayresult  = new JSONArray((Collection) client.getProjectClient().getAllProjects().claim());
+                JSONArray measurementResultJSONArray = new JSONArray();
 
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put(uQasarMetric.PROJECTS_PER_SYSTEM_INSTANCE.name(), jsonArrayresult);
-                measurements.put(jsonObject);
+                Iterable<BasicProject> basicProjects = client.getProjectClient().getAllProjects().claim();
 
-
-                //measurements.add(new Measurement(uQasarMetric.PROJECTS_PER_SYSTEM_INSTANCE, measurementJSONResult));
-
-            }
-            else if (queryExpression.getQuery().equalsIgnoreCase(uQasarMetric.ISSUES_PER_PROJECTS_PER_SYSTEM_INSTANCE.name())) {
-                JSONObject jsonObject = new JSONObject();
-                Iterable<BasicProject> basicProjects  =   client.getProjectClient().getAllProjects().claim();
                 for (BasicProject basicProject : basicProjects) {
-                    Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql("project = "+basicProject.getName());
-                    Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
-                    jsonArrayresult = new JSONArray((Collection) issues);
-                    jsonObject.put(basicProject.getName(), jsonArrayresult);
 
-                    //measurementJSONResult = issues.toString();
-                    //measurements.add(new Measurement(uQasarMetric.ISSUES_PER_PROJECTS_PER_SYSTEM_INSTANCE,measurementJSONResult));
+                    JSONObject bp = new JSONObject();
+                    bp.put("self",basicProject.getSelf());
+                    bp.put("key",basicProject.getKey());
+                    bp.put("name",basicProject.getName());
+                    measurementResultJSONArray.put(bp);
                 }
-                JSONObject supersetJsonObject = new JSONObject();
-                supersetJsonObject.put(uQasarMetric.ISSUES_PER_PROJECTS_PER_SYSTEM_INSTANCE.name(), jsonObject);
 
-                measurements.put(supersetJsonObject);
+                measurements.add(new Measurement(uQasarMetric.PROJECTS_PER_SYSTEM_INSTANCE, measurementResultJSONArray.toString()));
 
-            }
-            else if (queryExpression.getQuery().contains(uQasarMetric.FIXED_ISSUES_PER_PROJECT.name())) {
+            }   else if (queryExpression.getQuery().equalsIgnoreCase(uQasarMetric.ISSUES_PER_PROJECTS_PER_SYSTEM_INSTANCE.name())) {
+
+                Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql(" ORDER BY project DESC");
+                Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
+                measurements.add(new Measurement(uQasarMetric.ISSUES_PER_PROJECTS_PER_SYSTEM_INSTANCE,formatIssuesResult(issues)));
+
+            }  else if (queryExpression.getQuery().contains(uQasarMetric.FIXED_ISSUES_PER_PROJECT.name())) {
+
                 Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql("resolution = Fixed ORDER BY updatedDate DESC");
                 Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
-                jsonArrayresult = new JSONArray((Collection) issues);
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put(uQasarMetric.FIXED_ISSUES_PER_PROJECT.name(), jsonArrayresult);
-                measurements.put(jsonObject);
-                //measurementJSONResult = issues.toString();
-                //measurements.add(new Measurement(uQasarMetric.FIXED_ISSUES_PER_PROJECT,measurementJSONResult));
+                measurements.add(new Measurement(uQasarMetric.FIXED_ISSUES_PER_PROJECT, formatIssuesResult(issues)));
 
-            }
-            else if (queryExpression.getQuery().contains(uQasarMetric.UNRESOLVED_ISSUES_PER_PROJECT.name())) {
+            }  else if (queryExpression.getQuery().contains(uQasarMetric.UNRESOLVED_ISSUES_PER_PROJECT.name())) {
                 Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql("resolution = Unresolved ORDER BY updatedDate DESC");
                 Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
+                measurements.add(new Measurement(uQasarMetric.UNRESOLVED_ISSUES_PER_PROJECT, formatIssuesResult(issues)));
 
-                jsonArrayresult = new JSONArray((Collection) issues);
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put(uQasarMetric.UNRESOLVED_ISSUES_PER_PROJECT.name(), jsonArrayresult);
-                measurements.put(jsonObject);
-
-                //measurementJSONResult = issues.toString();
-                //measurements.add(new Measurement(uQasarMetric.UNRESOLVED_ISSUES_PER_PROJECT,measurementJSONResult));
-
-            }
-            else if (queryExpression.getQuery().contains(uQasarMetric.UNRESOLVED_BUG_ISSUES_PER_PROJECT.name())) {
+            } else if (queryExpression.getQuery().contains(uQasarMetric.UNRESOLVED_BUG_ISSUES_PER_PROJECT.name())) {
 
                 Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql("issuetype = Bug AND status = \"To Do\"");
                 Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
 
-                jsonArrayresult = new JSONArray((Collection) issues);
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put(uQasarMetric.UNRESOLVED_BUG_ISSUES_PER_PROJECT.name(), jsonArrayresult);
-                measurements.put(jsonObject);
-            }
-            else if (queryExpression.getQuery().contains(uQasarMetric.UNRESOLVED_TASK_ISSUES_PER_PROJECT.name())) {
+                measurements.add(new Measurement(uQasarMetric.UNRESOLVED_BUG_ISSUES_PER_PROJECT, formatIssuesResult(issues)));
+            } else if (queryExpression.getQuery().contains(uQasarMetric.UNRESOLVED_TASK_ISSUES_PER_PROJECT.name())) {
                 Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql("issuetype = Task AND status = \"To Do\"");
                 Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
-                jsonArrayresult = new JSONArray((Collection) issues);
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put(uQasarMetric.UNRESOLVED_TASK_ISSUES_PER_PROJECT.name(), jsonArrayresult);
-                measurements.put(jsonObject);            }
-            else
-            {
+                measurements.add(new Measurement(uQasarMetric.UNRESOLVED_TASK_ISSUES_PER_PROJECT, formatIssuesResult(issues)));
+            } else {
             throw new uQasarException(uQasarException.UQasarExceptionType.UQASAR_NOT_EXISTING_METRIC,queryExpression.getQuery());
             }
 
@@ -142,8 +118,8 @@ public class JiraAdapter implements SystemAdapter {
     }
 
     @Override
-    public JSONArray query(String bindedSystemURL, String credentials, String queryExpression) throws uQasarException {
-        JSONArray measurements = null;
+    public List<Measurement> query(String bindedSystemURL, String credentials, String queryExpression) throws uQasarException {
+        List<Measurement> measurements = null;
 
         BindedSystem bindedSystem = new BindedSystem();
         bindedSystem.setUri(bindedSystemURL);
@@ -164,13 +140,37 @@ public class JiraAdapter implements SystemAdapter {
         return measurements;
     }
 
+    public void printMeasurements(List<Measurement> measurements){
+        String newLine = System.getProperty("line.separator");
+        for (Measurement measurement : measurements) {
+            System.out.println("----------TEST metric: "+measurement.getMetric()+" ----------"+newLine);
+            System.out.println(measurement.getMeasurement()+newLine+newLine);
+            System.out.println();
+
+        }
+    }
+
+    public String formatIssuesResult( Iterable<BasicIssue> issues) throws JSONException {
+
+        JSONArray measurementResultJSONArray = new JSONArray();
+
+        for (BasicIssue issue : issues) {
+            JSONObject i = new JSONObject();
+            i.put("self", issue.getSelf());
+            i.put("key", issue.getKey());
+            measurementResultJSONArray.put(i);
+        }
+
+        return  measurementResultJSONArray.toString();
+    }
+
 
 
     //in order to invoke main from outside jar
     //mvn exec:java -Dexec.mainClass="eu.uqasar.jira.adapter.JiraAdapter" -Dexec.args="http://95.211.223.9:8084 soaptester:soaptester ISSUES_PER_PROJECTS_PER_SYSTEM_INSTANCE"
 
     public static void main(String[] args) {
-        JSONArray measurements;
+        List<Measurement> measurements;
         String newLine = System.getProperty("line.separator");
         BindedSystem bindedSystem = new BindedSystem();
         bindedSystem.setUri(args[0]);
@@ -185,8 +185,8 @@ public class JiraAdapter implements SystemAdapter {
         JiraAdapter jiraAdapter = new JiraAdapter();
 
             measurements = jiraAdapter.query(bindedSystem,user,jiraQueryExpresion);
-            System.out.println("------------------------------------------"+newLine);
-            System.out.println(measurements);
+            jiraAdapter.printMeasurements(measurements);
+
 
         } catch (uQasarException e) {
             e.printStackTrace();
