@@ -23,21 +23,24 @@ public class JiraAdapterTest {
     String credentials = "soaptester:soaptester";
 
     // Test uqasar db connection
-    // Test   metrics : { RESOURCES_PER_BINDING , ISSUES_PER_RESOURCE_PER_BINDING }
+    // Test   metrics : { RESOURCES_PER_BINDING , ISSUES_PER_RESOURCE_PER_BINDING ....}
     @Test
     public void queryTest(){
         List<Measurement> measurements = null;
 
-        try{
+
             for (uQasarMetric metric  :uQasarMetric.values()) {
 
+                try{
                 measurements = jiraAdapter.query(bindedSystemURL, credentials, metric.name());
-                jiraAdapter.printMeasurements(measurements);
+                    jiraAdapter.printMeasurements(measurements);
+                }catch (uQasarException e){
+                    System.out.println(e.toString());
+                }
+
             }
 
-        }catch (uQasarException e){
-            e.printStackTrace();
-        }
+
     }
 
 
