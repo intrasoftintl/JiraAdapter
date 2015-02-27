@@ -25,8 +25,8 @@
         <dependency>
             <!-- JRJC is distributed under the Apache 2.0 license. -->
             <groupId>com.atlassian.jira</groupId>
-            <artifactId>jira-rest-java-client</artifactId>
-            <version>2.0.0-m2</version>
+            <artifactId>jira-rest-java-client-core</artifactId>
+            <version>2.0.0-m25</version>
             <exclusions>
                 <exclusion>
                     <!--
@@ -36,6 +36,10 @@
                     -->
                     <groupId>javax.xml.stream</groupId>
                     <artifactId>stax-api</artifactId>
+                </exclusion>
+                <exclusion>
+                	<artifactId>joda-time</artifactId>
+                	<groupId>joda-time</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
