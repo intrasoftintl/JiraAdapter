@@ -1,165 +1,186 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 
-    <!--JiraAdapter is added to maven repo the JiraAdapter jar
-   mvn install:install-file -Dfile=/home/eleni/IdeaProjects/JiraAdapter/target/JiraAdapter-1.0.jar -DgroupId=JiraAdapter -DartifactId=JiraAdapter -Dversion=1.0 -Dpackaging=jar
-    -->
-    <groupId>JiraAdapter</groupId>
-    <artifactId>JiraAdapter</artifactId>
-    <version>1.2</version>
+	<!--JiraAdapter is added to maven repo the JiraAdapter jar mvn install:install-file 
+		-Dfile=/home/eleni/IdeaProjects/JiraAdapter/target/JiraAdapter-1.0.jar -DgroupId=JiraAdapter 
+		-DartifactId=JiraAdapter -Dversion=1.0 -Dpackaging=jar -->
+	<groupId>eu.uqasar.jira.adapter.JiraAdapter</groupId>
+	<artifactId>JiraAdapter</artifactId>
+	<version>1.2.2</version>
 
+	<dependencies>
+		<!--After adding to maven repo the uQuasarAdapter jar mvn install:install-file 
+			-Dfile=/home/eleni/IdeaProjects/uQasarAdapter/target/uQasarAdapter.jar -DgroupId=uQasarAdapter 
+			-DartifactId=uQasarAdapter -Dversion=1.0 -Dpackaging=jar -->
+		<dependency>
+			<groupId>eu.uqasar.adapter.uQasarAdapter</groupId>
+			<artifactId>uQasarAdapter</artifactId>
+			<version>2.0.4</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<!-- JRJC is distributed under the Apache 2.0 license. -->
+			<groupId>com.atlassian.jira</groupId>
+			<artifactId>jira-rest-java-client-core</artifactId>
+			<version>2.0.0-m25</version>
+			<exclusions>
+				<exclusion>
+					<!-- Not excluding this will pull in both stax:stax-api:1.0.1 and javax.xml.stream:stax-api:1.0.2 
+						as transitive dependencies. We don't want both, and not excluding this will 
+						give you a duplicate warning when the dependencies are shaded into the jar 
+						by the maven-shade-plugin -->
+					<groupId>javax.xml.stream</groupId>
+					<artifactId>stax-api</artifactId>
+				</exclusion>
+				<exclusion>
+					<artifactId>joda-time</artifactId>
+					<groupId>joda-time</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<inherited>true</inherited>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.5.1</version>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+					<encoding>UTF-8</encoding>
+					<showWarnings>true</showWarnings>
+					<showDeprecation>true</showDeprecation>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.1</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<transformers>
+						<transformer
+							implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+							<mainClass>com.atlassian.jira.examples.Main</mainClass>
+						</transformer>
+					</transformers>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>1.2.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>java</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<mainClass>eu.uqasar.jira.adapter.JiraAdapter</mainClass>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>eu.uqasar.jira.adapter.JiraAdapter</mainClass>
+						</manifest>
+					</archive>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.5</version>
+			</plugin>
+		</plugins>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
 
-    <dependencies>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>2.3.2</version>
+					<configuration>
+						<source>1.6</source>
+						<target>1.6</target>
+						<compilerArgument></compilerArgument>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 
-        <!--After adding to maven repo the uQuasarAdapter jar
-        mvn install:install-file -Dfile=/home/eleni/IdeaProjects/uQasarAdapter/target/uQasarAdapter.jar -DgroupId=uQasarAdapter -DartifactId=uQasarAdapter -Dversion=1.0 -Dpackaging=jar
-        -->
-        <dependency>
-        <groupId>uQasarAdapter</groupId>
-        <artifactId>uQasarAdapter</artifactId>
-        <version>1.0</version>
-        </dependency>
-        <dependency>
-            <!-- JRJC is distributed under the Apache 2.0 license. -->
-            <groupId>com.atlassian.jira</groupId>
-            <artifactId>jira-rest-java-client-core</artifactId>
-            <version>2.0.0-m25</version>
-            <exclusions>
-                <exclusion>
-                    <!--
-                   Not excluding this will pull in both stax:stax-api:1.0.1 and javax.xml.stream:stax-api:1.0.2
-                   as transitive dependencies. We don't want both, and not excluding this will give you a duplicate
-                   warning when the dependencies are shaded into the jar by the maven-shade-plugin
-                    -->
-                    <groupId>javax.xml.stream</groupId>
-                    <artifactId>stax-api</artifactId>
-                </exclusion>
-                <exclusion>
-                	<artifactId>joda-time</artifactId>
-                	<groupId>joda-time</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-    </dependencies>
-    <build>
-    <plugins>
-        <plugin>
-            <inherited>true</inherited>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <version>2.5.1</version>
-            <configuration>
-                <source>1.6</source>
-                <target>1.6</target>
-                <encoding>UTF-8</encoding>
-                <showWarnings>true</showWarnings>
-                <showDeprecation>true</showDeprecation>
-            </configuration>
-        </plugin>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-shade-plugin</artifactId>
-            <version>2.1</version>
-            <executions>
-                <execution>
-                    <phase>package</phase>
-                    <goals>
-                        <goal>shade</goal>
-                    </goals>
-                </execution>
-            </executions>
-            <configuration>
-                <transformers>
-                    <transformer
-                            implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                        <mainClass>com.atlassian.jira.examples.Main</mainClass>
-                    </transformer>
-                </transformers>
-            </configuration>
-        </plugin>
-        <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <version>1.2.1</version>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>java</goal>
-                    </goals>
-                </execution>
-            </executions>
-            <configuration>
-                <mainClass>eu.uqasar.jira.adapter.JiraAdapter</mainClass>
-            </configuration>
-        </plugin>
-        <plugin>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <configuration>
-                <archive>
-                    <manifest>
-                        <mainClass>eu.uqasar.jira.adapter.JiraAdapter</mainClass>
-                    </manifest>
-                </archive>
-                <descriptorRefs>
-                    <descriptorRef>jar-with-dependencies</descriptorRef>
-                </descriptorRefs>
-            </configuration>
-        </plugin>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-resources-plugin</artifactId>
-            <version>2.3</version>
-        </plugin>
-    </plugins>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
+	</build>
 
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>2.3.2</version>
-                    <configuration>
-                        <source>1.6</source>
-                        <target>1.6</target>
-                        <compilerArgument></compilerArgument>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
+	<repositories>
+		<repository>
+			<id>Apache Nexus</id>
+			<url>https://repository.apache.org/content/repositories/snapshots/</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>atlassian-public</id>
+			<url>https://m2proxy.atlassian.com/repository/public</url>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>daily</updatePolicy>
+				<checksumPolicy>warn</checksumPolicy>
+			</snapshots>
+			<releases>
+				<enabled>true</enabled>
+				<checksumPolicy>warn</checksumPolicy>
+			</releases>
+		</repository>
 
-    </build>
-
-    <repositories>
-        <repository>
-            <id>Apache Nexus</id>
-            <url>https://repository.apache.org/content/repositories/snapshots/</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>atlassian-public</id>
-            <url>https://m2proxy.atlassian.com/repository/public</url>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
-                <checksumPolicy>warn</checksumPolicy>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-                <checksumPolicy>warn</checksumPolicy>
-            </releases>
-        </repository>
-    </repositories>
+		<!-- ATB Maven Repository -->
+		<repository>
+			<id>atb-ext-releases</id>
+			<name>ATB Maven Public RELEASES Repository</name>
+			<url>http://www.atb-bremen.de/artifactory/ext-releases-local/</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>atb-ext-snapshots</id>
+			<name>ATB Maven Public SNAPSHOT Repository</name>
+			<url>http://www.atb-bremen.de/artifactory/ext-snapshots-local/</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
 </project>
