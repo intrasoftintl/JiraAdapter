@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>JiraAdapter</groupId>
+  <groupId>eu.uqasar.jira.adapter.JiraAdapter</groupId>
   <artifactId>JiraAdapter</artifactId>
-  <version>1.0</version>
+  <version>1.2.3</version>
   <build>
     <resources>
       <resource>
@@ -86,7 +86,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>2.3</version>
+        <version>2.5</version>
       </plugin>
     </plugins>
   </build>
@@ -109,6 +109,24 @@
       </snapshots>
       <id>atlassian-public</id>
       <url>https://m2proxy.atlassian.com/repository/public</url>
+    </repository>
+    <repository>
+      <releases />
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>atb-ext-releases</id>
+      <name>ATB Maven Public RELEASES Repository</name>
+      <url>http://www.atb-bremen.de/artifactory/ext-releases-local/</url>
+    </repository>
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots />
+      <id>atb-ext-snapshots</id>
+      <name>ATB Maven Public SNAPSHOT Repository</name>
+      <url>http://www.atb-bremen.de/artifactory/ext-snapshots-local/</url>
     </repository>
   </repositories>
 </project>

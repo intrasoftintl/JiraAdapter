@@ -1,13 +1,30 @@
 package eu.uqasar.jira.adapter;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import com.atlassian.jira.rest.client.JiraRestClient;
-import com.atlassian.jira.rest.client.JiraRestClientFactory;
-import com.atlassian.jira.rest.client.domain.BasicIssue;
-import com.atlassian.jira.rest.client.domain.BasicProject;
-import com.atlassian.jira.rest.client.domain.SearchResult;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
+import com.atlassian.jira.rest.client.api.JiraRestClient;
+import com.atlassian.jira.rest.client.api.JiraRestClientFactory;
+import com.atlassian.jira.rest.client.api.domain.BasicIssue;
+import com.atlassian.jira.rest.client.api.domain.BasicProject;
+import com.atlassian.jira.rest.client.api.domain.Issue;
+import com.atlassian.jira.rest.client.api.domain.SearchResult;
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
 import com.atlassian.util.concurrent.Promise;
+import com.google.common.collect.Iterables;
+
 import eu.uqasar.adapter.SystemAdapter;
 import eu.uqasar.adapter.exception.uQasarException;
 import eu.uqasar.adapter.model.BindedSystem;
@@ -15,14 +32,6 @@ import eu.uqasar.adapter.model.Measurement;
 import eu.uqasar.adapter.model.User;
 import eu.uqasar.adapter.model.uQasarMetric;
 import eu.uqasar.adapter.query.QueryExpression;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Created with IntelliJ IDEA.
@@ -34,9 +43,12 @@ import java.util.List;
 public class JiraAdapter implements SystemAdapter {
 
 
-
+	// Define a sample value for max results to be fetched
+	private final int MAX_RESULTS = 1000; 
+	private final static Logger LOGGER = Logger.getLogger(JiraAdapter.class.getName());
 
     public JiraAdapter() {
+    	LOGGER.setLevel(Level.INFO);
     }
 
     @Override
@@ -72,46 +84,74 @@ public class JiraAdapter implements SystemAdapter {
 
             }   else if (queryExpression.getQuery().equalsIgnoreCase(uQasarMetric.ISSUES_PER_PROJECTS_PER_SYSTEM_INSTANCE.name())) {
 
-                Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql(" ORDER BY project DESC");
-                Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
+            	LOGGER.info("Fetching data for metric " +uQasarMetric.ISSUES_PER_PROJECTS_PER_SYSTEM_INSTANCE.name());            	
+                
+            	List<Iterable<Issue> > issues = new ArrayList<Iterable<Issue>>();
+            	String query = " ORDER BY project DESC";
+            	issues = getIssues(client, query);
+            	
+                // Add all the issues to the measurements
                 measurements.add(new Measurement(uQasarMetric.ISSUES_PER_PROJECTS_PER_SYSTEM_INSTANCE,formatIssuesResult(issues)));
 
             }  else if (queryExpression.getQuery().contains(uQasarMetric.FIXED_ISSUES_PER_PROJECT.name())) {
 
-                Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql("resolution = Fixed ORDER BY updatedDate DESC");
-                Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
+            	LOGGER.info("Fetching data for metric " +uQasarMetric.FIXED_ISSUES_PER_PROJECT.name());
+
+                List<Iterable<Issue> > issues = new ArrayList<Iterable<Issue>>();
+            	String query = "resolution = Fixed ORDER BY updatedDate DESC";
+            	issues = getIssues(client, query);
+
                 measurements.add(new Measurement(uQasarMetric.FIXED_ISSUES_PER_PROJECT, formatIssuesResult(issues)));
 
             }  else if (queryExpression.getQuery().contains(uQasarMetric.UNRESOLVED_ISSUES_PER_PROJECT.name())) {
-                Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql("resolution = Unresolved ORDER BY updatedDate DESC");
-                Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
-                measurements.add(new Measurement(uQasarMetric.UNRESOLVED_ISSUES_PER_PROJECT, formatIssuesResult(issues)));
+
+            	LOGGER.info("Fetching data for metric " +uQasarMetric.UNRESOLVED_ISSUES_PER_PROJECT.name());
+
+                List<Iterable<Issue> > issues = new ArrayList<Iterable<Issue>>();
+            	String query = "resolution = Unresolved ORDER BY updatedDate DESC";
+            	issues = getIssues(client, query);
+
+            	measurements.add(new Measurement(uQasarMetric.UNRESOLVED_ISSUES_PER_PROJECT, formatIssuesResult(issues)));
 
             } else if (queryExpression.getQuery().contains(uQasarMetric.UNRESOLVED_BUG_ISSUES_PER_PROJECT.name())) {
 
-                Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql("issuetype = Bug AND status = \"To Do\"");
-                Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
+            	LOGGER.info("Fetching data for metric " +uQasarMetric.UNRESOLVED_BUG_ISSUES_PER_PROJECT.name());
+
+                List<Iterable<Issue> > issues = new ArrayList<Iterable<Issue>>();
+            	String query = "issuetype = Bug AND status = \"To Do\"";
+            	issues = getIssues(client, query);
 
                 measurements.add(new Measurement(uQasarMetric.UNRESOLVED_BUG_ISSUES_PER_PROJECT, formatIssuesResult(issues)));
+                
             } else if (queryExpression.getQuery().contains(uQasarMetric.UNRESOLVED_TASK_ISSUES_PER_PROJECT.name())) {
-                Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql("issuetype = Task AND status = \"To Do\"");
-                Iterable<BasicIssue> issues =  searchResultPromise.claim().getIssues();
+            	
+            	LOGGER.info("Fetching data for metric " +uQasarMetric.UNRESOLVED_TASK_ISSUES_PER_PROJECT.name());
+
+                List<Iterable<Issue> > issues = new ArrayList<Iterable<Issue>>();
+            	String query = "issuetype = Task AND status = \"To Do\"";
+            	issues = getIssues(client, query);
+            	
                 measurements.add(new Measurement(uQasarMetric.UNRESOLVED_TASK_ISSUES_PER_PROJECT, formatIssuesResult(issues)));
+                
             } else {
-            throw new uQasarException(uQasarException.UQasarExceptionType.UQASAR_NOT_EXISTING_METRIC,queryExpression.getQuery());
+            	throw new uQasarException(uQasarException.UQasarExceptionType.UQASAR_NOT_EXISTING_METRIC,queryExpression.getQuery());
             }
 
-
+            // Close the JiraRestClient
+            client.close();
+            
             /* END -- Metrics implementation */
 
 
         } catch (JSONException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace(); 
         } catch (URISyntaxException e) {
             throw new uQasarException(uQasarException.UQasarExceptionType.BINDING_SYSTEM_BAD_URI_SYNTAX,bindedSystem,e.getCause());
         }  catch (RuntimeException e){
             throw new uQasarException(uQasarException.UQasarExceptionType.BINDING_SYSTEM_CONNECTION_REFUSED,bindedSystem,e.getCause());
-        }
+        } catch (IOException e) {
+			e.printStackTrace();
+		}
         return measurements;
 
 
@@ -150,20 +190,95 @@ public class JiraAdapter implements SystemAdapter {
         }
     }
 
-    public String formatIssuesResult( Iterable<BasicIssue> issues) throws JSONException {
+
+    /**
+     * Get a list of Iterable Issues based on a query 
+     * @param client
+     * @param query
+     * @return
+     */
+    public List<Iterable<Issue> > getIssues(JiraRestClient client, String query) {
+
+    	// List that will contain the results
+        List<Iterable<Issue> > allIssues = new ArrayList<Iterable<Issue>>();
+
+    	HashSet<String> fields = new HashSet<String>();
+    	fields.add("*all");
+    	
+    	// Start fetching the results from index 0
+    	Integer startIdx = 0;
+        Promise<SearchResult> searchResultPromise = client.getSearchClient().searchJql(query, new Integer(MAX_RESULTS), startIdx, fields); 
+        
+        // How many issues there are in total?
+        int totalIssues = searchResultPromise.claim().getTotal();
+    	LOGGER.info("Total issues: " +totalIssues);
+        
+        // Get the actual issues 
+        Iterable<Issue> issues =  searchResultPromise.claim().getIssues();
+        allIssues.add(issues);
+        
+        // Get the number of the issues
+        int nrOfObtained = getSizeValues(issues);                
+        LOGGER.info("Obtained issues: " +nrOfObtained);
+        
+        // If there are more issues continue from the next index that has not yet been obtained
+        while (nrOfObtained < totalIssues) {
+        	LOGGER.info("Total number of issues is higher than has been fetched. Proceeding to the next start index...");
+        	startIdx += MAX_RESULTS;
+        	LOGGER.info("New start index: " +startIdx);
+            // New search; fetch results from the following index
+        	searchResultPromise = client.getSearchClient().searchJql(query, new Integer(MAX_RESULTS), startIdx, fields);
+            // Get the actual issues and concatenate to the previous ones
+            Iterable<Issue> furtherIssues = searchResultPromise.claim().getIssues();
+            nrOfObtained += getSizeValues(furtherIssues);
+            LOGGER.info("Obtained issues: " +nrOfObtained);
+            allIssues.add(furtherIssues);
+        }
+
+    	
+    	return allIssues;
+
+    }
+    
+    
+    /**
+     * Create a String containing the JSON with issues. 
+     * This should be optimized for performance, and also enhanced to fetch the content pointed by the URL
+     * to prevent calls in the U-QASAR platform. 
+     * @param listOfIssues
+     * @return
+     * @throws JSONException
+     */
+    public String formatIssuesResult( List<Iterable<Issue> > listOfIssues) throws JSONException {
 
         JSONArray measurementResultJSONArray = new JSONArray();
 
-        for (BasicIssue issue : issues) {
-            JSONObject i = new JSONObject();
-            i.put("self", issue.getSelf());
-            i.put("key", issue.getKey());
-            measurementResultJSONArray.put(i);
-        }
-
+        for (Iterable<Issue> iterableIssue : listOfIssues) {
+            for (BasicIssue issue : iterableIssue) {
+                JSONObject i = new JSONObject();
+                i.put("self", issue.getSelf());
+                i.put("key", issue.getKey());
+                measurementResultJSONArray.put(i);
+            }
+		}
+        
         return  measurementResultJSONArray.toString();
     }
 
+    
+    /**
+     * Returns the size of the iterable
+     * @param values
+     * @return
+     */
+    private int getSizeValues(Iterable<?> values) {
+
+        if (values instanceof Collection<?>) {
+        	 return ((Collection<?>)values).size();
+        }
+        
+        return 0;
+    }
 
 
     //in order to invoke main from outside jar
