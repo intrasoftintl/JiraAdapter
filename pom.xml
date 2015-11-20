@@ -8,7 +8,7 @@
 		-DartifactId=JiraAdapter -Dversion=1.0 -Dpackaging=jar -->
 	<groupId>eu.uqasar.jira.adapter.JiraAdapter</groupId>
 	<artifactId>JiraAdapter</artifactId>
-	<version>1.2.2</version>
+	<version>1.2.3</version>
 
 	<dependencies>
 		<!--After adding to maven repo the uQuasarAdapter jar mvn install:install-file 
@@ -24,7 +24,7 @@
 			<!-- JRJC is distributed under the Apache 2.0 license. -->
 			<groupId>com.atlassian.jira</groupId>
 			<artifactId>jira-rest-java-client-core</artifactId>
-			<version>2.0.0-m25</version>
+			<version>2.0.0</version>
 			<exclusions>
 				<exclusion>
 					<!-- Not excluding this will pull in both stax:stax-api:1.0.1 and javax.xml.stream:stax-api:1.0.2 
@@ -34,11 +34,11 @@
 					<groupId>javax.xml.stream</groupId>
 					<artifactId>stax-api</artifactId>
 				</exclusion>
-				<exclusion>
+<!-- 				<exclusion>
 					<artifactId>joda-time</artifactId>
 					<groupId>joda-time</groupId>
 				</exclusion>
-			</exclusions>
+ -->			</exclusions>
 		</dependency>
 	</dependencies>
 	<build>
